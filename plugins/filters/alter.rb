@@ -46,11 +46,9 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
   #
   #     filter {
   #       alter => {
-  #         coalesce => { 
-  #              "field_name1" => ["value11", "value12", "value13", ... etc],
-  #              "field_name2" => ["value21", "value22", "value23", ... etc],
-  #              .....
-  #         }
+  #         coalesce => [
+  #              "field_name", "value1", "value2", "value3", ...
+  #         ]
   #       }
   #     }
   config :coalesce, :validate => :array
@@ -70,7 +68,7 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
       }
     end # condrewrite
     
-    
+    @condrewriteother_parsed = []
     @condrewriteother.nil? or @condrewriteother.each_slice(4) do |field, expected, replacement_field, replacement_value|
       if [field, expected, replacement_field, replacement_value].any? {|n| n.nil?}
         @logger.error("Invalid condrewrteother configuration. condrewriteother has to define 4 elements per config entry", :file => file, :expected => expected, :replacement_field => replacementfield, :replacement_value => replacementvalue)
@@ -84,10 +82,16 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
       }
     end # condrewriteother
     
-    @coalesce.nil? or if not @coalesce.is_a?(Hash)
-      @logger.error("Invalid coalesce configuration. coalesce has to define one Hash")
+    @coalesce_parsed = []
+    @coalesce.nil? or if not @coalesce.is_a?(Array) or @coalesce.length < 2
+      @logger.error("Invalid coalesce configuration. coalesce has to define one Array of at least 2 elements")
       raise "Bad configuration, aborting."
     end
+    @coalesce_parsed << {
+      :field  => @coalesce.slice!(0),
+      :subst_array => @coalesce
+    }
+    
        
   end # def register
   
@@ -149,20 +153,16 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
   
   private
   def coalesce(event)
-    @coalesce.each do |field, substitution|
-      if substitution.is_a?(Array)
-        substitution_parsed = substitution.map { |x| event.sprintf(x) }
-        not_nul_index = substitution_parsed.find_index { |x| not x.nil? }
-        if not not_nul_index.nil?
-          event[field] = substitution_parsed[not_nul_index]
-        end
-      else
-        substitution_parsed = event.sprintf(substitution)
-        if not substitution_parsed.nil?
-          event[field] = substitution_parsed
-        end
+    @coalesce_parsed.each do |config|
+      field = config[:field]
+      subst_array = config[:subst_array]
+      
+      substitution_parsed = subst_array.map { |x| event.sprintf(x) }
+      not_nul_index = substitution_parsed.find_index { |x| not x.nil? or not x == "nil" }
+      if not not_nul_index.nil?
+        event[field] = substitution_parsed[not_nul_index]
       end
-    end
+    end # @coalesce_parsed.each
   end # def coalesce
   
 end
