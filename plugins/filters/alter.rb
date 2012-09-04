@@ -84,7 +84,7 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
       }
     end # condrewriteother
     
-    if @coalesce.nil? or not @coalesce.is_a?(Hash)
+    @coalesce.nil? or if not @coalesce.is_a?(Hash)
       @logger.error("Invalid coalesce configuration. coalesce has to define one Hash")
       raise "Bad configuration, aborting."
     end
