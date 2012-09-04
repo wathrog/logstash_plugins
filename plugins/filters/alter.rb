@@ -1,7 +1,7 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 
-# The alter filter allows you to do general mutations to fields 
+# The alter filter allows you to do general alterations to fields 
 # that are not included in the normal mutate filter. 
 #
 class LogStash::Filters::Alter < LogStash::Filters::Base
@@ -86,11 +86,12 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
     @coalesce.nil? or if not @coalesce.is_a?(Array) or @coalesce.length < 2
       @logger.error("Invalid coalesce configuration. coalesce has to define one Array of at least 2 elements")
       raise "Bad configuration, aborting."
+    else
+      @coalesce_parsed << {
+        :field  => @coalesce.slice!(0),
+        :subst_array => @coalesce
+      }
     end
-    @coalesce_parsed << {
-      :field  => @coalesce.slice!(0),
-      :subst_array => @coalesce
-    }
     
        
   end # def register
