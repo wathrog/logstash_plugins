@@ -161,6 +161,6 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
         end
       end
     end
-  end
+  end # def coalesce
   
 end
