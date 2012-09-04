@@ -158,7 +158,7 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
       subst_array = config[:subst_array]
       
       substitution_parsed = subst_array.map { |x| event.sprintf(x) }
-      not_nul_index = substitution_parsed.find_index { |x| not x.nil? or not x == "nil" }
+      not_nul_index = substitution_parsed.find_index { |x| not x.nil? and not x.eql?("nil") }
       if not not_nul_index.nil?
         event[field] = substitution_parsed[not_nul_index]
       end
