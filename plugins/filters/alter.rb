@@ -112,14 +112,14 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
       if event[field].is_a?(Array)
         event[field] = event[field].map do |v|
           if v == expected
-            v = replacement
+            v = event.sprintf(replacement)
           else
             v
           end
         end
       else
         if event[field] == expected
-          event[field] = replacement
+          event[field] = event.sprintf(replacement)
         end
       end
     end # @condrewrite_parsed.each
@@ -136,12 +136,12 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
       if event[field].is_a?(Array)
         event[field].each do |v|
           if v == expected
-            event[replacement_field] = replacement_value
+            event[replacement_field] = event.sprintf(replacement_value)
           end
         end
       else
         if event[field] == expected
-          event[replacement_field] = replacement_value
+          event[replacement_field] = event.sprintf(replacement_value)
         end
       end
     end # @condrewriteother_parsed.each
@@ -151,13 +151,15 @@ class LogStash::Filters::Alter < LogStash::Filters::Base
   def coalesce(event)
     @coalesce.each do |field, substitution|
       if substitution.is_a?(Array)
-        not_nul_index = substitution.find_index { |x| not x.nil? }
+        substitution_parsed = substitution.map { |x| event.sprintf(x) }
+        not_nul_index = substitution_parsed.find_index { |x| not x.nil? }
         if not not_nul_index.nil?
-          event[field] = substitution[not_nul_index]
+          event[field] = substitution_parsed[not_nul_index]
         end
       else
-        if not substitution.nil?
-          event[field] = substitution
+        substitution_parsed = event.sprintf(substitution)
+        if not substitution_parsed.nil?
+          event[field] = substitution_parsed
         end
       end
     end
